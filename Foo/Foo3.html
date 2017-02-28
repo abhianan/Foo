@@ -1,0 +1,174 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>Foo</title>
+	<script type="text/javascript" src="phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+    
+<body>
+<script type="text/javascript">
+var game = new Phaser.Game(1360, 600, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render });
+    
+    
+function preload() {
+
+    game.load.tilemap('level', 'level.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.image('tilesheet', 'tiles_spritesheet.png');
+    game.load.spritesheet('dude', 'Foo.png', 32, 48);
+    game.load.image('background', 'background.jpg');
+    game.load.image('star', 'star.png');
+    game.load.image('bad','enemy1.png');
+    game.load.image('bads','enemy2.png');
+    game.load.image('badss','enemy3.png');
+}
+    
+    
+var map;
+var tileset;
+var layer;
+var player;
+var cursors;
+var jumpButton;
+var bg;
+var jumpTimer = 0;
+var scoreText;
+var stars;
+var score;
+var enemy;
+var enemys;
+var enemyss;
+    
+function create() {
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    bg = game.add.tileSprite(0, 0, 1360, 600, 'background');
+    bg.fixedToCamera = true;
+    map = game.add.tilemap('level');
+    map.addTilesetImage('tilesheet');
+    layer = map.createLayer('blockedLayer');
+    map.setCollisionBetween(0, 7000, true, layer);
+    layer.resizeWorld();
+    game.physics.arcade.gravity.y = 250;
+    
+    enemy=game.add.sprite(2550,game.world.height - 188,'bad');
+    game.physics.enable(enemy,Phaser.Physics.ARCADE);
+    enemy.body.velocity.x = 100;
+    enemy.body.bounce.x=1;
+    
+    enemys=game.add.sprite(4970,game.world.height - 188,'bads');
+    game.physics.enable(enemys,Phaser.Physics.ARCADE);
+    enemys.body.velocity.y = 700;
+    enemys.body.bounce.y=1;
+    enemys.body.collideWorldBounds = true;
+
+    enemyss=game.add.sprite(6510,game.world.height - 188,'badss');
+    game.physics.enable(enemyss,Phaser.Physics.ARCADE);
+    enemyss.body.velocity.x = 100;
+    enemyss.body.bounce.x=1;
+    
+    player = game.add.sprite(1,game.world.height - 118 , 'dude');
+    game.physics.enable(player, Phaser.Physics.ARCADE);
+    //player.body.collideWorldBounds= true;
+    player.body.bounce.y = 0.2;
+    player.body.gravity.y = 300;
+    game.camera.follow(player);
+    player.animations.add('left', [0, 1, 2, 3], 10, true);
+    player.animations.add('right', [5, 6, 7, 8], 10, true);
+    stars = game.add.group();
+    stars.enableBody = true;
+    for (var i = 0; i < 100; i++)
+    {
+      var star = stars.create(i * 70, 0, 'star');
+      star.body.gravity.y = 750;
+      star.body.bounce.y =1; //0.7 + Math.random() * 0.2;
+      star.body.collideWorldBounds = true;
+    }
+    score=0;
+    labelscore=game.add.text(20,216,"Score:0", { font: "30px Arial", fill: "#ffffff" });  
+    //scoreText = game.add.text(20, 216, 'Fast', { fontSize: '32px', fill: '#000' });
+    cursors = game.input.keyboard.createCursorKeys();
+    jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+}
+function update() {
+    game.physics.arcade.collide(player, layer);
+    game.physics.arcade.collide(stars, layer);
+    game.physics.arcade.collide(player, enemy);
+    game.physics.arcade.collide(enemy, layer);
+    game.physics.arcade.collide(player, enemys);
+    game.physics.arcade.collide(enemys, layer);
+    game.physics.arcade.collide(player, enemyss);
+    game.physics.arcade.collide(enemyss, layer);
+    
+    game.physics.arcade.overlap(player, stars, collectStar, null, this);
+    game.physics.arcade.overlap(enemy, player, kill, null, this);
+    game.physics.arcade.overlap(enemys, player, kills, null, this);
+    game.physics.arcade.overlap(enemyss, player, killss, null, this);
+    
+    player.body.velocity.x = 0;
+    if (cursors.left.isDown)
+    {
+        player.body.velocity.x = -150;
+        player.animations.play('left');
+    }
+    else if (cursors.right.isDown)
+    {
+        player.body.velocity.x = 150;
+        player.animations.play('right');
+    }
+    else
+    {
+        player.animations.stop();
+        player.frame = 4;
+    }
+    if (jumpButton.isDown && player.body.onFloor() && game.time.now > jumpTimer)
+    {
+        player.body.velocity.y = -420;
+        jumpTimer = game.time.now + 750;
+    }
+    if(player.x >=game.world.width-50) 
+    {
+     scoreText = game.add.text(6150, 250, 'Level Complete', { fontSize: '250px', fill: '#000' });
+      }   
+    if(player.y >=game.world.height)
+    {
+      scoreText = game.add.text(player.x, 250, 'Game Over', { fontSize: '250px', fill: '#000' }); 
+      location.reload();
+    }
+}
+    
+function collectStar (player, star) {
+    star.kill();
+    score += 10;
+    labelscore.text = 'Score: ' + score;
+}
+    
+function kill (enemy, player) {
+    player.kill();
+    scoreText = game.add.text(2550, 250, 'Game Over', { fontSize: '250px', fill: '#000' });
+    location.reload();
+}
+    
+function kills (enemys, player) {
+    player.kill();
+    scoreText = game.add.text(5110, 250, 'Game Over', { fontSize: '250px', fill: '#000' });
+    location.reload();
+}
+    
+function killss (enemyss, player) {
+    player.kill();
+    scoreText = game.add.text(6510, 250, 'Game Over', { fontSize: '250px', fill: '#000' });
+    location.reload();
+}
+    
+function render () {
+    //game.debug.bodyInfo(player, 16, 24);
+    game.debug.text( "Welcome Gamers",600, 24,'rgba(0,0,0,1)' );
+}
+</script>
+    </body>
+</html>
